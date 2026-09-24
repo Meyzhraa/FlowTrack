@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String        @id @default(uuid())
+  name             String
+  email            String        @unique
+  password         String
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  image            String?       @db.Text // <-- TAMBAHKAN KOLOM INI
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  wallets          Wallet[]
+  categories       Category[]
+  transactions     Transaction[]
+}
+
+model Wallet {
+  id                String        @id @default(uuid())
+  name              String
+  balance           Float         @default(0)
+  isIncludedInTotal Boolean       @default(true)
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  type         CategoryType  // <-- UBAH KE CategoryType (Enum)
+  color        String        @default("#5046E5")
+  budgetLimit  Float         @default(0)
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[] // <-- TAMBAHKAN RELASI BALIK INI
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id          String       @id @default(uuid())
+  amount      Float
+  type        CategoryType
+  description String?
+  receiptUrl  String?
+  date        DateTime     @default(now())
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  walletId    String
+  wallet      Wallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  categoryId  String
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
